@@ -1,0 +1,57 @@
+Traceback (most recent call last):
+  File "/workspace/patootie_code/mm_argfallacy/scripts/run_wavlm_roberta_afc_whisper.py", line 19, in <module>
+    from src.configs.multimodal_configs import get_wavlm_roberta_afc_config
+  File "/workspace/patootie_code/mm_argfallacy/src/configs/multimodal_configs.py", line 3, in <module>
+    from src.training.losses import FocalLoss
+  File "/workspace/patootie_code/mm_argfallacy/src/training/__init__.py", line 3, in <module>
+    from src.training.trainer import BaseTrainer, TextTrainer
+  File "/workspace/patootie_code/mm_argfallacy/src/training/trainer.py", line 5, in <module>
+    import lightning as L
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/lightning/__init__.py", line 18, in <module>
+    from lightning.fabric.fabric import Fabric  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/lightning/fabric/__init__.py", line 35, in <module>
+    from lightning.fabric.fabric import Fabric  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/lightning/fabric/fabric.py", line 39, in <module>
+    from lightning.fabric.accelerators.accelerator import Accelerator
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/lightning/fabric/accelerators/__init__.py", line 15, in <module>
+    from lightning.fabric.accelerators.accelerator import Accelerator
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/lightning/fabric/accelerators/accelerator.py", line 19, in <module>
+    from lightning.fabric.accelerators.registry import _AcceleratorRegistry
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/lightning/fabric/accelerators/registry.py", line 18, in <module>
+    from lightning.fabric.utilities.exceptions import MisconfigurationException
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/lightning/fabric/utilities/__init__.py", line 18, in <module>
+    from lightning.fabric.utilities.distributed import is_shared_filesystem
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/lightning/fabric/utilities/distributed.py", line 19, in <module>
+    from lightning.fabric.utilities.cloud_io import _is_local_file_protocol
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/lightning/fabric/utilities/cloud_io.py", line 22, in <module>
+    import fsspec
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/fsspec/__init__.py", line 71, in <module>
+    process_entries()
+  File "/workspace/patootie_code/mm_argfallacy/mmarg_env/lib/python3.11/site-packages/fsspec/__init__.py", line 45, in process_entries
+    eps = entry_points()
+          ^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/importlib/metadata/__init__.py", line 1041, in entry_points
+    return SelectableGroups.load(eps).select(**params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/importlib/metadata/__init__.py", line 476, in load
+    ordered = sorted(eps, key=by_group)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/importlib/metadata/__init__.py", line 1039, in <genexpr>
+    dist.entry_points for dist in _unique(distributions())
+    ^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/importlib/metadata/__init__.py", line 636, in entry_points
+    return EntryPoints._from_text_for(self.read_text('entry_points.txt'), self)
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/importlib/metadata/__init__.py", line 939, in read_text
+    return self._path.joinpath(filename).read_text(encoding='utf-8')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/pathlib.py", line 1058, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.11/pathlib.py", line 1044, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen codecs>", line 309, in __init__
+KeyboardInterrupt

@@ -1,0 +1,40 @@
+# Virtual environment
+mmarg_env/
+.venv/
+venv/
+env/
+
+# Training artifacts (large)
+checkpoints/
+logs/
+
+# Local data & caches (use download script; see README)
+data/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+.env
+.env.*
+
+# Optional local scratch at repo root
+/output.png
