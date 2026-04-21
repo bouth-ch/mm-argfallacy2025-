@@ -1,0 +1,4 @@
+Modèle A,Modèle B,n,F1_A,F1_B,ΔF1,IC 95%,IC ∋ 0 ?,p Wilcoxon,Sig.,Wins B
+Text (RoBERTa),MM (WavLM+RoBERTa),35,0.4764,0.4446,-0.0318,"[-0.1100, +0.0453]",oui,0.5654,ns,16
+Text (RoBERTa),MM k=1,35,0.4764,0.4263,-0.0501,"[-0.1262, +0.0248]",oui,0.2799,ns,13
+MM (WavLM+RoBERTa),MM k=1,35,0.4446,0.4263,-0.0183,"[-0.0583, +0.0220]",oui,0.3669,ns,15
