@@ -1,9 +1,110 @@
-# MM-ArgFallacy — Classification Multimodale de Sophismes
+# MM-ArgFallacy 2025 : Détection Multimodale de Sophismes Argumentatifs
 
-Reproduction et extension de la tâche partagée MM-ArgFallacy2025 (ACL 2025) sur le dataset **MM-USED-Fallacy** : 1278 extraits audio issus de débats présidentiels américains (1960–2020), annotés pour deux tâches :
+Reproduction et extension méthodologique de la tâche partagée MM-ArgFallacy 2025 (ACL 2025) sur la détection et la classification de sophismes argumentatifs dans des débats politiques américains.
 
-- **AFC** — Classification de sophismes (6 classes)
-- **AFD** — Détection de sophismes (binaire)
+---
+
+## Résumé
+
+Ce projet reproduit et étend les systèmes de référence de la tâche partagée MM-ArgFallacy 2025 à partir du dataset MM-USED-Fallacy — 1 278 extraits audio-texte issus de débats présidentiels américains (1960–2020), annotés pour deux sous-tâches : la **classification de sophismes (AFC)**, problème à 6 classes, et la **détection de sophismes (AFD)**, problème de détection binaire. Nous évaluons des architectures texte seul et multimodales sous validation croisée Leave-One-Dialogue-Out (LODO-CV) sur l'ensemble des 35 folds de dialogue, et examinons plusieurs extensions méthodologiques : injection de contexte dialogique, transcription Whisper comme signal texte alternatif, rognage des clips audio et stratégies de fusion alternatives. Un audit systématique d'alignement audio-texte met en évidence une limite structurelle du benchmark. Des analyses d'explicabilité (SHAP, saliency par gradient, attribution d'attention) sont également incluses. L'ensemble des résultats, de la méthodologie et des analyses est détaillé dans le rapport et les diapositives joints.
+
+> **Rapport :** `report/mm_argfallacy2025_rapport.pdf`  
+> **Diapositives :** `report/mm_argfallacy2025_slides.pdf`
+
+---
+
+## Installation
+
+```bash
+git clone https://github.com/username/mm-argfallacy2025
+cd mm-argfallacy2025
+python -m venv mmarg_env
+source mmarg_env/bin/activate
+pip install -U pip
+pip install -r requirements.txt
+```
+
+Installer PyTorch pour votre version CUDA avant de lancer les expériences : https://pytorch.org/get-started/locally/
+
+Testé avec Python 3.11 et CUDA 12.x. Les expériences ont été conduites sur une instance RunPod équipée d'un RTX 4090.
+
+---
+
+## Données
+
+Le dataset MM-USED-Fallacy est distribué via la bibliothèque [MAMKit](https://github.com/lt-nlp-lab-unibo/mamkit) (v0.1.1). Pour télécharger et préparer les données :
+
+```bash
+python scripts/download_mmused_data.py
+```
+
+Les fichiers sont placés dans `data/MMUSED-fallacy/` :
+
+- `dataset.pkl` — 1 278 échantillons répartis sur 35 dialogues, avec texte de transcription, timestamps audio et labels de sophismes
+- `audio_clips/` — clips WAV pré-extraits, un par snippet
+
+**Note sur l'alignement audio-texte.** Un audit mené avec Whisper (`src/data/whisper_audit.py`) révèle qu'une part significative des clips audio contient du contexte dialogique environnant plutôt que la frontière exacte du snippet annoté. Il s'agit d'une propriété structurelle du benchmark, discutée en détail dans le rapport.
+
+---
+
+## Reproduction des expériences
+
+Tous les résultats sont écrits de manière incrémentale dans `results/results.json`. Chaque script ajoute sa propre entrée sans écraser les résultats existants ; les exécutions peuvent être interrompues et reprises.
+
+### Baselines texte seul (LODO-CV 35 folds)
+
+```bash
+python scripts/run_roberta_afc.py    # RoBERTa-base, AFC
+python scripts/run_roberta_afd.py    # RoBERTa-base, AFD
+
+```
+
+### Fusion multimodale : WavLM + RoBERTa
+
+Architecture : RoBERTa-base (texte) et WavLM-base (audio) → BiLSTM (128 unités, bidirectionnel) → concaténation (768 + 256) → tête de classification MLP
+```bash
+python scripts/run_wavlm_roberta_afc_35folds.py ( # Sur 35 fold )
+python scripts/run_wavlm_roberta_afd.py (# Sur 5 fold en raison de limite computationnel et de temps )
+
+```
+### Extension 
+```bash
+
+python scripts/run_wavlm_roberta_afc_context_k1_35folds.py
+```
+
+### Experience Exploratoires 
+```bash
+# Évaluation 5 folds (dialogues retenus : 13_1988, 22_1996, 25_2000, 31_2004, 46_2020)
+python scripts/run_wavlm_roberta_afc_focal.py       # Focal loss + WeightedRandomSampler
+python scripts/run_wavlm_roberta_afc_context.py              # Injection de contexte dialogique
+python scripts/run_wavlm_roberta_afc_whisper.py              # Transcription Whisper comme entrée texte
+python scripts/run_wavlm_roberta_afc_trimmed.py              # Clips audio rognés
+python scripts/run_longformer_afc_context.py                 # Encodeur Longformer avec contexte dialogique
+```
+
+
+### Reproductibilité
+
+- Graine aléatoire fixée à `42` via `L.seed_everything(42, workers=True)`, réinitialisée au début de chaque fold.
+- Le LODO-CV de MAMKit itère sur un `set()` (ordre non déterministe). `src/utils/splits.py` trie les folds par `dialogue_id` après génération pour garantir une séquence de folds stable.
+- Chaque script appelle `prepare_text_reproducibility()` ou `prepare_multimodal_reproducibility()` avant l'entraînement.
+
+---
+
+## Notebooks d'analyse
+
+Les fonctions analytiques sont définies dans `src/analyses/` ; les notebooks appellent ces fonctions directement.
+
+| Notebook | Contenu |
+|---|---|
+| `01v2_data_exploration.ipynb` | Distributions des classes, longueurs des snippets, statistiques des dialogues |
+| `02_text_baseline.ipynb` | Entraînement et évaluation de la baseline texte RoBERTa |
+| `03_analysis_afc_afd.ipynb` | Résultats texte : F1 par fold, matrices de confusion, XAI (SHAP, saliency par gradient, attention) |
+| `04v2_audio_exploration.ipynb` | Durées des clips, formes d'onde, spectrogrammes, EDA audio par classe |
+| `05v2_analysis_multimodal.ipynb` | Résultats multimodaux, audit d'alignement Whisper, analyse audio-texte |
+| `06_comparaison_txt_multimodal.ipynb` | Comparaison texte vs. multimodal, F1 par classe, analyse des erreurs |
+| `07_statistical_tests.ipynb` | Tests de Wilcoxon, significativité au niveau des folds |
 
 ---
 
@@ -11,152 +112,53 @@ Reproduction et extension de la tâche partagée MM-ArgFallacy2025 (ACL 2025) su
 
 ```
 mm_argfallacy/
-├── notebooks/               # Exploration et analyse
+├── notebooks/               # Notebooks d'exploration et d'analyse
 ├── src/
 │   ├── configs/             # Hyperparamètres et sélection des folds
 │   ├── data/                # Classes de dataset, prétraitement audio, audit Whisper
 │   ├── experiments/         # Points d'entrée CV appelés par les scripts
 │   ├── training/            # Trainer, boucle CV, fonctions de perte
 │   ├── evaluation/          # Métriques et schéma de sortie
-│   ├── analyses/            # Fonctions de visualisation et d'analyse
-│   └── utils/               # Splits, I/O résultats, manifest des folds
+│   └── analyses/            # Fonctions de visualisation et d'analyse
 ├── scripts/                 # Un script par expérience
 ├── results/                 # results.json, whisper_audit.csv, figures/
+├── report/                  # Rapport PDF et diapositives
 └── requirements.txt
 ```
 
 ---
 
-## Installation
+## Citation
 
-```bash
-git clone <repo>
-cd mm_argfallacy
-python -m venv mmarg_env
-source mmarg_env/bin/activate
-pip install -U pip
-pip install -r requirements.txt
+Si vous utilisez ce code ou ces résultats dans vos travaux, merci de citer l'article de la tâche partagée originale :
+
+```bibtex
+@inproceedings{mancini-etal-2024-mmargfallacy,
+  title     = {{MM-ArgFallacy}: A Shared Task on Multimodal Argumentative Fallacy Classification},
+  author    = {Mancini, Eleonora and others},
+  booktitle = {Proceedings of the 11th Workshop on Argument Mining (ArgMining 2024)},
+  year      = {2024}
+}
 ```
-
-Installer PyTorch pour votre version CUDA avant de lancer : https://pytorch.org/get-started/locally/
-
 ---
 
-## Données
+## Matériel et ressources de calcul
 
-```bash
-python scripts/download_mmused_data.py
-```
+Les expériences ont été conduites sur une instance **RunPod** équipée du matériel suivant :
 
-Les données sont placées dans `data/MMUSED-fallacy/` :
-- `dataset.pkl` — 1278 échantillons sur 35 dialogues, avec texte, timestamps audio et labels de sophismes
-- `audio_clips/` — clips WAV pré-extraits, un par snippet
-
----
-
-## Expériences
-
-Tous les résultats sont sauvegardés dans `results/results.json`. Chaque script ajoute son entrée sans écraser les autres.
-
-### Baselines texte seul (35-fold LDOCV)
-
-```bash
-python scripts/run_roberta_afc.py       # RoBERTa AFC
-python scripts/run_roberta_afd.py       # RoBERTa AFD
-```
-
-### Multimodal — Fusion tardive WavLM + RoBERTa
-
-Architecture : RoBERTa-base (texte) + WavLM-base → BiLSTM(128, bidirectionnel) → concat(768+256) → tête MLP.
-
-```bash
-# Évaluation 5 folds (folds sélectionnés : 13_1988, 22_1996, 25_2000, 31_2004, 46_2020)
-python scripts/run_wavlm_roberta_afc.py
-python scripts/run_wavlm_roberta_afd.py
-python scripts/run_wavlm_roberta_afc_focal.py         # Focal Loss + WeightedRandomSampler
-
-# Évaluation 35 folds
-python scripts/run_wavlm_roberta_afc_35folds.py
-
-# Extensions
-python scripts/run_wavlm_roberta_afc_context.py               # + contexte dialogue (k=3)
-python scripts/run_wavlm_roberta_afc_context_k1_35folds.py    # + contexte dialogue (k=1, 35 folds)
-python scripts/run_wavlm_roberta_afc_whisper.py               # Transcription Whisper comme entrée texte
-python scripts/run_wavlm_roberta_afc_trimmed.py               # Clips audio rognés
-python scripts/run_longformer_afc_context.py                  # Longformer + contexte dialogue
-```
-
----
-
-## Résultats
-
-L'évaluation 5 folds utilise les mêmes 5 dialogues de test pour tous les modèles.
-
-### AFC — Classification de sophismes (6 classes, Macro F1)
-
-| Modèle | Folds | Macro F1 | Écart-type |
-|---|---|---|---|
-| Baseline papier (Mancini et al. 2024) | — | 0.393 | — |
-| RoBERTa texte seul | 35 | 0.476 | 0.180 |
-| **WavLM + RoBERTa (multimodal)** | **5** | **0.502** | **0.057** |
-| WavLM + RoBERTa (35 folds) | 35 | 0.445 | 0.183 |
-| WavLM + RoBERTa (Focal Loss) | 5 | 0.238 | 0.056 |
-| WavLM + RoBERTa + contexte (k=1, 35 folds) | 35 | 0.426 | 0.190 |
-| WavLM + RoBERTa + contexte (k=3) | 5 | 0.352 | 0.104 |
-| WavLM + transcription Whisper | 5 | 0.362 | 0.127 |
-| WavLM + clips rognés | 5 | 0.399 | 0.094 |
-| Longformer + contexte dialogue | 5 | 0.379 | 0.075 |
-
-### AFD — Détection de sophismes (binaire, Macro F1)
-
-| Modèle | Folds | Macro F1 | Écart-type |
-|---|---|---|---|
-| Baseline papier | — | 0.277 | — |
-| RoBERTa texte seul | 35 | 0.308 | 0.133 |
-| WavLM + RoBERTa | 5 | 0.319 | 0.084 |
-
----
-
-## Notebooks
-
-| Notebook | Contenu |
+| Composant | Détail |
 |---|---|
-| `01v2_data_exploration.ipynb` | Distributions des classes, longueurs des snippets, statistiques des dialogues |
-| `02_text_baseline.ipynb` | Entraînement et évaluation des baselines texte RoBERTa (AFC et AFD) |
-| `03_analysis_afc_afd.ipynb` | Analyse des résultats texte : F1 par fold, matrices de confusion, XAI (SHAP, saliency, attention) |
-| `04v2_audio_exploration.ipynb` | Durées des clips, formes d'onde, spectrogrammes, EDA audio par classe |
-| `05v2_analysis_multimodal.ipynb` | Résultats multimodaux, audit Whisper, analyse d'alignement audio-texte |
-| `06_comparaison_txt_multimodal.ipynb` | Comparaison texte vs multimodal, F1 par classe, analyse des erreurs |
-| `07_statistical_tests.ipynb` | Tests de Wilcoxon, significativité au niveau des folds |
+| GPU | NVIDIA RTX 4090 (24 Go VRAM) |
+| CUDA | 12.x |
+| Python | 3.11 |
 
-Toutes les fonctions d'analyse sont dans `src/analyses/` — les notebooks ne font qu'appeler ces fonctions.
+### Prérequis GPU recommandés
 
----
+- **Minimum :** GPU avec ≥ 16 Go VRAM (ex. RTX 3090, A4000) pour les configurations à batch size réduit.
+- **Recommandé :** GPU avec ≥ 24 Go VRAM (ex. RTX 4090, A5000) pour reproduire les résultats dans les conditions d'origine.
+- L'entraînement sur CPU est théoriquement possible mais non testé et prohibitif en temps.
 
-## Audit de qualité audio
-
-Les clips audio du dataset ne sont pas rognés aux frontières exactes du snippet  ils incluent le contexte du dialogue environnant. Un audit basé sur Whisper (`src/data/whisper_audit.py`) a re-transcrit les 1278 clips et comparé avec le texte des snippets étiquetés :
-
-- WER moyen : **~0.24** sur l'ensemble du dataset
-- Parmi les clips avec `ref_len ≥ 10` mots (1094 clips) :
-  - **53.8%** — audio plus long que le snippet (contexte environnant présent)
-  - **46.2%** — désalignement réel (l'audio ne correspond pas au texte étiqueté)
-
-Ce désalignement est une limite structurelle du benchmark MM-USED-Fallacy et affecte le signal audio reçu par WavLM durant l'entraînement.
+> **Note.** Le LODO-CV complet sur 35 folds pour les modèles multimodaux est coûteux en calcul. Les scripts exploratoires sont limités à 5 folds représentatifs (dialogues `13_1988`, `22_1996`, `25_2000`, `31_2004`, `46_2020`) pour réduire le temps d'exécution.
 
 ---
-
-## Reproductibilité
-
-- Graine fixe `42` via `L.seed_everything(42, workers=True)`, réinitialisée au début de chaque fold.
-- Le LDOCV de MAMKit itère sur un `set()` (non déterministe). `src/utils/splits.py` trie les folds par dialogue_id retenu après génération.
-- Tous les résultats CV sont ajoutés à `results/results.json` après chaque fold, permettant d'inspecter ou reprendre un entraînement.
-- Chaque script appelle `prepare_text_reproducibility()` ou `prepare_multimodal_reproducibility()` avant l'entraînement.
-
----
-
-## Prérequis
-
-- Python 3.11
-- CUDA 12.x
-- Voir `requirements.txt` pour les dépendances Python
+ Le dataset MM-USED-Fallacy est soumis à ses propres conditions d'utilisation telles que distribuées via MAMKit ; consulter le [dépôt MAMKit](https://github.com/lt-nlp-lab-unibo/mamkit) pour les détails. Le code de ce dépôt est distribué sous licence MIT.
