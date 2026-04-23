@@ -53,36 +53,53 @@ Tous les résultats sont écrits de manière incrémentale dans `results/results
 
 ### Baselines texte seul (LODO-CV 35 folds)
 
-```bash
-python scripts/run_roberta_afc.py    # RoBERTa-base, AFC
-python scripts/run_roberta_afd.py    # RoBERTa-base, AFD
+**AFC** — classification multi-classe (6 sophismes), 1 278 snippets, macro F1 :
 
+```bash
+python scripts/run_roberta_afc.py
+```
+
+**AFD** — détection binaire (fallacieux / non-fallacieux), ~17 000 phrases annotées au niveau de la phrase, 9,2 % de positifs, binary F1. Ce script est significativement plus long que l'AFC en raison du volume de phrases :
+
+```bash
+python scripts/run_roberta_afd.py
 ```
 
 ### Fusion multimodale : WavLM + RoBERTa
 
-Architecture : RoBERTa-base (texte) et WavLM-base (audio) → BiLSTM (128 unités, bidirectionnel) → concaténation (768 + 256) → tête de classification MLP
-```bash
-python scripts/run_wavlm_roberta_afc_35folds.py ( # Sur 35 fold )
-python scripts/run_wavlm_roberta_afd.py (# Sur 5 fold en raison de limite computationnel et de temps )
+Architecture : RoBERTa-base (texte) et WavLM-base (audio) encodent chacun leur modalité. Les représentations audio passent par un BiLSTM (128 unités, bidirectionnel) puis sont concaténées aux embeddings texte (768 + 256 dimensions) avant une tête de classification MLP.
 
+**AFC — 35 folds LODO complets :**
+
+```bash
+python scripts/run_wavlm_roberta_afc_35folds.py
 ```
-### Extension 
-```bash
 
+**AFD — 5 folds seulement** (dialogues `13_1988`, `22_1996`, `25_2000`, `31_2004`, `46_2020`) en raison du volume de phrases (~17k) et des contraintes de temps de calcul sur RTX 4090 :
+
+```bash
+python scripts/run_wavlm_roberta_afd.py
+```
+
+### Extension : contexte dialogique k=1 (35 folds)
+
+Variante AFC où chaque snippet est précédé de la phrase N-1. Objectif : tester si un contexte minimal améliore la fusion audio-texte sans dépasser la limite de 512 tokens de RoBERTa :
+
+```bash
 python scripts/run_wavlm_roberta_afc_context_k1_35folds.py
 ```
 
-### Experience Exploratoires 
-```bash
-# Évaluation 5 folds (dialogues retenus : 13_1988, 22_1996, 25_2000, 31_2004, 46_2020)
-python scripts/run_wavlm_roberta_afc_focal.py       # Focal loss + WeightedRandomSampler
-python scripts/run_wavlm_roberta_afc_context.py              # Injection de contexte dialogique
-python scripts/run_wavlm_roberta_afc_whisper.py              # Transcription Whisper comme entrée texte
-python scripts/run_wavlm_roberta_afc_trimmed.py              # Clips audio rognés
-python scripts/run_longformer_afc_context.py                 # Encodeur Longformer avec contexte dialogique
-```
+### Expériences exploratoires (5 folds)
 
+Toutes évaluées sur les 5 folds audio (dialogues `13_1988`, `22_1996`, `25_2000`, `31_2004`, `46_2020`) :
+
+```bash
+python scripts/run_wavlm_roberta_afc_focal.py       # Focal loss + WeightedRandomSampler
+python scripts/run_wavlm_roberta_afc_context.py     # Injection de contexte dialogique complet
+python scripts/run_wavlm_roberta_afc_whisper.py     # Transcription Whisper comme entrée texte
+python scripts/run_wavlm_roberta_afc_trimmed.py     # Clips audio rognés aux frontières du snippet
+python scripts/run_longformer_afc_context.py        # Encodeur Longformer avec contexte dialogique
+```
 
 ### Reproductibilité
 
